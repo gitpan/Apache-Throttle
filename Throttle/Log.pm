@@ -13,7 +13,7 @@ tie $speeds, 'IPC::Shareable', 'ATLX', { create => 1, mode => 0666 };
 $speeds = {} unless $speeds;
 
 $DEBUG = 0;
-$Id = '$Id: Log.pm,v 1.5 1998/09/15 18:10:16 don Exp $';
+$Id = '$Id: Log.pm,v 1.6 1998/09/15 18:19:47 don Exp $';
 
 sub handler {
     my ($r) = shift;
@@ -31,7 +31,7 @@ sub start {
     {
         local $^W = 0; # silence warning from (%$speeds > ...)
 	my $max = $r->dir_config("MaxUsers");
-	if (%$speeds > $max) {
+	if ($max && (%$speeds > $max)) {
 	    $r->dir_config("ThrottleDebug") and
 		$r->warn("Speed hash reached $max users... cleared.");
 	    $speeds = {};

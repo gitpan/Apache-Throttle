@@ -8,8 +8,8 @@ use Apache;
 use Apache::Constants qw( :common );
 use Apache::URI;
 
-$VERSION = 0.02;
-$Id = '$Id: Throttle.pm,v 1.4 1998/09/15 18:10:39 don Exp $';
+$VERSION = 0.03;
+$Id = '$Id: Throttle.pm,v 1.5 1998/09/15 18:20:01 don Exp $';
 
 # Caching is experimental.  Assuming that your document root is writable
 # by mod_perl this should work, but I can't promise that it will speed
