@@ -1,6 +1,15 @@
 Revision history for Perl extension Apache::Throttle.
 
+0.02  Tue Sept 15 12:42:48 1998
+        - Put the CVS $Id: Changes,v 1.3 1998/09/15 18:10:51 don Exp $ lines in single quotes, not double.
+        - Changed the permissions on the speed hash.
+        - Set Apache::Throttle::Log to empty the hash when it
+          becomes too full.  I'm still looking for a better
+          solution for this.
+        - Changed the $DEBUG variable to an Apache config
+          variable.
+
 0.01  Fri Sept 11 02:43:41 1998
 	- original version
 
-$Id: Changes,v 1.2 1998/09/11 20:45:39 don Exp $
+$Id: Changes,v 1.3 1998/09/15 18:10:51 don Exp $

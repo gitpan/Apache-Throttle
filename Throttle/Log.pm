@@ -9,11 +9,11 @@ use IPC::Shareable;
 
 BEGIN { eval "use Time::HiRes qw( time );" }
 
-tie $speeds, 'IPC::Shareable', 'ATLZ', { create => 1, mode => 0600 };
+tie $speeds, 'IPC::Shareable', 'ATLX', { create => 1, mode => 0666 };
 $speeds = {} unless $speeds;
 
 $DEBUG = 0;
-$Id = "$Id: Log.pm,v 1.3 1998/09/11 23:25:16 don Exp $";
+$Id = '$Id: Log.pm,v 1.5 1998/09/15 18:10:16 don Exp $';
 
 sub handler {
     my ($r) = shift;
@@ -28,6 +28,16 @@ sub start {
     my $start_time = time();
     my $id = get_id($r) or return;
 
+    {
+        local $^W = 0; # silence warning from (%$speeds > ...)
+	my $max = $r->dir_config("MaxUsers");
+	if (%$speeds > $max) {
+	    $r->dir_config("ThrottleDebug") and
+		$r->warn("Speed hash reached $max users... cleared.");
+	    $speeds = {};
+	}
+    }
+
     $speeds->{$id} ||= [];
     return if (@{ $speeds->{$id} } < ($r->dir_config("StoreSpeeds") || 3)) &&
               !$r->dir_config("ContinueChecking");
@@ -41,12 +51,13 @@ sub start {
 sub stop {
     my ($r) = shift;
 
+    my $debug = $r->dir_config("ThrottleDebug");
     my $stop_time = time();
     my $id = $r->notes("REQUEST_ID") || get_id($r);
 
     my $log_types = $r->dir_config("LogTypes");
     if ($log_types && ($r->content_type !~ /$log_types/o)) {
-	$DEBUG && $r->warn("Throttle: Can't log... content type " .
+	$debug && $r->warn("Throttle: Can't log... content type " .
                            $r->content_type .
 			   " doesn't match regexp $log_types.");
 	return;
@@ -72,7 +83,7 @@ sub stop {
     my $duration = $stop_time - $start_time;
 
     if ($duration < ($r->dir_config("MinDuration") || .05)) {
-	$DEBUG && $r->warn("Throttle: Can't log... request lasted " .
+	$debug && $r->warn("Throttle: Can't log... request lasted " .
                     sprintf("%.3f", $duration) . ", less than minimum of ".
 		    ($r->dir_config("MinDuration") || "default .05"));
 	return;
@@ -80,7 +91,7 @@ sub stop {
 
     my $bytes = $r->bytes_sent;
     if ($bytes < ($r->dir_config("MinSize") || (1024 * 64))) {
-	$DEBUG && $r->warn("Throttle: Can't log... request was $bytes, " .
+	$debug && $r->warn("Throttle: Can't log... request was $bytes, " .
                            "smaller than minimum of " .
 			   ($r->dir_config("MinSize") || "default 64k"));
 	return;
@@ -91,7 +102,7 @@ sub stop {
     $done->($speed);
     (tied $speeds)->shunlock;
 
-    $DEBUG && $r->log_error("Throttle data for $id: speed = $speed " .
+    $debug && $r->log_error("Throttle data for $id: speed = $speed " .
                             "[${bytes} bytes/" . sprintf("%.3f", $duration) .
                             "s]");
 }
@@ -136,6 +147,7 @@ Apache::Throttle::Log - Apache/Perl module to determine average speed
 =head1 SYNOPSIS
 
     <Location /images>
+      PerlSetVar       MaxUsers     100
       PerlSetVar       MinSize      100000
       PerlSetVar       MinDuration  0.1
       PerlSetVar       IDSub        Website::Session::session_id
@@ -157,6 +169,16 @@ These options can be set with the PerlSetVar operative in one of your
 Apache configuration files.
 
 =over 4
+
+=item ThrottleDebug
+
+Prints extra debugging information to the error log.
+
+=item MaxUsers
+
+Clear the speed hash when it reaches the specified number of users.
+I'm still looking for a better way of doing this.  If anyone has any
+suggestions, feel free to tell me.  This option is strongly recommended.
 
 =item LogTypes
 

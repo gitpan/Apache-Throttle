@@ -1,15 +1,15 @@
+
 package Apache::Throttle;
 
 use strict;
-use vars qw( $VERSION $DEBUG $CacheData $Id );
+use vars qw( $VERSION $CacheData $Id );
 
 use Apache;
 use Apache::Constants qw( :common );
 use Apache::URI;
 
-$VERSION = 0.01;
-$DEBUG = 0;
-$Id = "$Id: Throttle.pm,v 1.2 1998/09/11 20:45:39 don Exp $";
+$VERSION = 0.02;
+$Id = '$Id: Throttle.pm,v 1.4 1998/09/15 18:10:39 don Exp $';
 
 # Caching is experimental.  Assuming that your document root is writable
 # by mod_perl this should work, but I can't promise that it will speed
@@ -79,9 +79,10 @@ sub handler {
 	$i-- if $i;
     }
 
-    $DEBUG && $r->log_error("Throttled: " . $filename . " => " .
-                            $speeds[$i][0] . " (" . int($speeds[$i][1]) .
-                            "/" . $speed . ")");
+    if ($r->dir_config("ThrottleDebug")) {
+	$r->log_error("Throttled: " . $filename . " => " . $speeds[$i][0] .
+                      " (" . int($speeds[$i][1]) . "/" . ($speed || "?"). ")");
+    }
     $filename = "$filename/" . $speeds[$i][0];
     $r->filename($filename);
     return OK;
@@ -165,6 +166,10 @@ This option can be set with the PerlSetVar operative in one of your
 Apache configuration files.
 
 =over 4
+
+=item ThrottleDebug
+
+Prints extra debugging information to the error log.
 
 =item PredictSub
 
